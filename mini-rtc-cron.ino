@@ -5,7 +5,6 @@ RTC_DS3231 rtc;
 
 void setup () {
   Serial.begin(9600);
-  delay(3000); // wait for console opening
 
   if (! rtc.begin()) {
     Serial.println("Couldn't find RTC");
@@ -22,16 +21,12 @@ void setup () {
   }
 }
 
-char* const TEST_RATES[] = {
-  "*/15 * *", // 0, 15, 30 & 45 seconds
-  // "0 */2 *", // every two minutes (it will start on first 0 secs and then every two)
-  // "10 33 22", // specific time 22:33:10 hs
+unsigned short const TEST_RATES_SIZE = 1;
+char * const TEST_RATES[] = {
+  "*/15 * *"
 };
 
-// * : Any 
-// */[0-59]: Every but each: */15 would be at 0, 15, 30 & 45
-// [0-59]: Exact
-bool checkTime(char* sentence, short current) {
+bool checkTime(char *sentence, short current) {
   short number;
 
   if (sentence[0] == '*') { // any
@@ -52,12 +47,7 @@ bool checkTime(char* sentence, short current) {
 }
 
 bool isTime(char* sentence, DateTime now) {
-  bool isIt = false;
-
-  char hours[8];
-  char mins[8];
-  char secs[8];
-
+  char hours[8], mins[8], secs[8];
   sscanf(sentence, "%4s %4s %4s", &secs, &mins, &hours);
 
   return (
@@ -67,17 +57,35 @@ bool isTime(char* sentence, DateTime now) {
   );
 }
 
-void loop () {
+// http://www.gammon.com.au/callbacks
+typedef void (*Callback) (const char code);
+unsigned long lastEpoch = 0;
+
+void onRun(char code) {
+  Serial.print(code);
+  Serial.println(" : RUN");
+}
+
+void tick (Callback boom); // prototype to avoid Arduino for creating its own
+void tick (Callback boom) {
   DateTime now = rtc.now();
-  showTime(now);
+  int epoch = now.unixtime();
 
-  for (size_t i = 0; i <= sizeof(&TEST_RATES); i++) {
-    if (isTime(TEST_RATES[i], now)) {
-      Serial.println("RUN!");
+  if (epoch > lastEpoch) {  
+    showTime(now);
+
+    for (short i = 0; i < TEST_RATES_SIZE; i++) {
+      if (isTime(TEST_RATES[i], now)) {
+        boom('A');
+      }
     }
+    
+    lastEpoch = epoch;
   }
+}
 
-  delay(1000);
+void loop () {
+  tick(onRun); 
 }
 
 void showTime(DateTime now) {
@@ -88,53 +96,9 @@ void showTime(DateTime now) {
   Serial.print(now.second(), DEC);
   Serial.println();
 }
+
 /*
-void showTime() {
-  DateTime now = rtc.now();
-
-  Serial.print(now.year(), DEC);
-  Serial.print('/');
-  Serial.print(now.month(), DEC);
-  Serial.print('/');
-  Serial.print(now.day(), DEC);
-  Serial.print(" (");
-  Serial.print(daysOfTheWeek[now.dayOfTheWeek()]);
-  Serial.print(") ");
-  Serial.print(now.hour(), DEC);
-  Serial.print(':');
-  Serial.print(now.minute(), DEC);
-  Serial.print(':');
-  Serial.print(now.second(), DEC);
-  Serial.println();
-
-  Serial.print(" since midnight 1/1/1970 = ");
-  Serial.print(now.unixtime());
-  Serial.print("s = ");
-  Serial.print(now.unixtime() / 86400L);
-  Serial.println("d");
-
-  // calculate a date which is 7 days and 30 seconds into the future
-  DateTime future (now + TimeSpan(7,12,30,6));
-
-  Serial.print(" now + 7d + 30s: ");
-  Serial.print(future.year(), DEC);
-  Serial.print('/');
-  Serial.print(future.month(), DEC);
-  Serial.print('/');
-  Serial.print(future.day(), DEC);
-  Serial.print(' ');
-  Serial.print(future.hour(), DEC);
-  Serial.print(':');
-  Serial.print(future.minute(), DEC);
-  Serial.print(':');
-  Serial.print(future.second(), DEC);
-  Serial.println();
-
   Serial.print("Temperature: ");
   Serial.print(rtc.getTemperature());
   Serial.println(" C");
-
-  Serial.println();
-  delay(3000);
-}
 */
