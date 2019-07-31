@@ -1,33 +1,33 @@
 #include "Cron.h"
 Cron cron;
 
-void setup () {
-  Serial.begin(9600);
-  cron.begin();
-}
-
-void onTimer(const String code) {
+// Called when a timer hits time
+void onAlarm(const String code) {
   Serial.print(" RUN > ");
   Serial.print(code);
   Serial.println();
 }
 
-void loop () {
-  cron.tick(onTimer); 
+// Called every second
+void onTick(const DateTime now) {
+  Serial.print("TIME: ");
+  Serial.print(now.hour(), DEC);
+  Serial.print(":");
+  Serial.print(now.minute(), DEC);
+  Serial.print(":");
+  Serial.print(now.second(), DEC);
+  Serial.print(" - ");
+
+  Serial.print("TEMP: ");
+  Serial.print(cron.getTemp());
+  Serial.println("°c");
 }
 
-// 
-// void showTime(DateTime now) {
-//   Serial.print(now.hour(), DEC);
-//   Serial.print(':');
-//   Serial.print(now.minute(), DEC);
-//   Serial.print(':');
-//   Serial.print(now.second(), DEC);
-//   Serial.println();
-// }
-// 
-// /*
-//   Serial.print("Temperature: ");
-//   Serial.print(rtc.getTemperature());
-//   Serial.println(" C");
-// */
+void setup () {
+  Serial.begin(9600);
+  cron.begin(onAlarm, onTick);
+}
+
+void loop () {
+  cron.tick();
+}

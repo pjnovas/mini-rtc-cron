@@ -1,11 +1,15 @@
 #include "config.h"
+
 #include "RTClib.h"
 #include "Arduino.h"
 #include "Cron.h"
 
 Cron::Cron() {}
 
-void Cron::begin(){
+void Cron::begin(alarm_callback onAlarm, tick_callback onTick) {
+  _onAlarm = onAlarm;
+  _onTick = onTick;
+
   rtc.begin();
 }
 
@@ -44,20 +48,28 @@ String Cron::isTime(const char* sentence, DateTime now) {
   return "0";
 }
 
-void Cron::tick(cron_callback onRun) {
+void Cron::tick() {
   DateTime now = rtc.now();
   int epoch = now.unixtime();
 
   if (epoch > lastEpoch) {
-    // Cron::showTime(now);
+    _onTick(now);
 
     for (short i = 0; i < CRON_RATES_SIZE; i++) {
       const String result = Cron::isTime(CRON_RATES[i], now);
       if (result != "0") {
-        onRun(result);
+        _onAlarm(result);
       }
     }
     
     lastEpoch = epoch;
   }
+}
+
+DateTime Cron::getTime() {
+  return rtc.now();
+}
+
+short Cron::getTemp() {
+  return rtc.getTemperature();
 }
