@@ -34,7 +34,7 @@ bool Cron::checkTime(const char *sentence, const short current) {
 }
 
 String Cron::isTime(const char* sentence, DateTime now) {
-  char code[4], hours[8], mins[8], secs[8];
+  char code[8], hours[8], mins[8], secs[8];
   sscanf(sentence, "%s %4s %4s %4s", &code, &secs, &mins, &hours);
 
   if (
